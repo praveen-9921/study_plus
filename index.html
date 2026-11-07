@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Pulse - Interactive Study & Project Tracker</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Chart.js for visualization analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Canvas Confetti for target animations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Custom Scrollbar for better UI */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.4);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(156, 163, 175, 0.7);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+  <!-- APP CONTAINER -->
+  <div id="app" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+    
+    <!-- HEADER NAVBAR -->
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
+      <div class="flex items-center space-x-3">
+        <div class="p-2.5 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-500/30">
+          <i data-lucide="brain-circuit" class="w-7 h-7"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Study Pulse</h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Track daily learning, project work & unlock custom rewards</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons Header Bar -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Add Log Button -->
+        <button onclick="openLogModal()" class="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow-md transition-all">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>Log Study / Project</span>
+        </button>
+
+        <!-- Tasks & Rewards Button -->
+        <button onclick="openTaskModal()" class="flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl shadow-md transition-all">
+          <i data-lucide="gift" class="w-4 h-4"></i>
+          <span>Tasks & Rewards</span>
+        </button>
+
+        <!-- Timer Tool Toggle -->
+        <button onclick="openTimerModal()" class="flex items-center gap-2 px-3.5 py-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-xl transition-all">
+          <i data-lucide="timer" class="w-4 h-4 text-indigo-500"></i>
+          <span class="hidden sm:inline">Focus Timer</span>
+        </button>
+
+        <!-- Export Data -->
+        <button onclick="exportDataJSON()" class="p-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all" title="Export Backup JSON">
+          <i data-lucide="download" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Import Data -->
+        <label class="p-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all cursor-pointer" title="Import Data JSON">
+          <i data-lucide="upload" class="w-4 h-4"></i>
+          <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="importDataJSON(event)">
+        </label>
+
+        <!-- Dark/Light Mode Toggle -->
+        <button onclick="toggleTheme()" class="p-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all" title="Toggle Theme">
+          <i data-lucide="moon" id="themeIconDark" class="w-4 h-4 hidden"></i>
+          <i data-lucide="sun" id="themeIconLight" class="w-4 h-4 hidden"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- METRICS OVERVIEW CARDS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Card 1: Total Study Time -->
+      <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Hours Logged</p>
+          <h3 id="statTotalHours" class="text-2xl font-bold text-slate-900 dark:text-white mt-1">0h 0m</h3>
+          <p id="statTotalSubtext" class="text-xs text-slate-400 mt-0.5">0 total entries</p>
+        </div>
+        <div class="p-3 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-xl">
+          <i data-lucide="clock" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <!-- Card 2: Current Streak -->
+      <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Active Streak</p>
+          <h3 id="statStreak" class="text-2xl font-bold text-slate-900 dark:text-white mt-1">0 Days</h3>
+          <p class="text-xs text-emerald-500 mt-0.5 font-medium">Consecutive study days</p>
+        </div>
+        <div class="p-3 bg-amber-50 dark:bg-amber-950/60 text-amber-500 rounded-xl">
+          <i data-lucide="flame" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <!-- Card 3: Daily Average -->
+      <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Daily Average</p>
+          <h3 id="statDailyAvg" class="text-2xl font-bold text-slate-900 dark:text-white mt-1">0.0h</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Based on active days</p>
+        </div>
+        <div class="p-3 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-500 rounded-xl">
+          <i data-lucide="trending-up" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <!-- Card 4: Focus Score -->
+      <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Avg Focus Rating</p>
+          <h3 id="statAvgFocus" class="text-2xl font-bold text-slate-900 dark:text-white mt-1">0.0 / 5</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Self-assessed productivity</p>
+        </div>
+        <div class="p-3 bg-purple-50 dark:bg-purple-950/60 text-purple-500 rounded-xl">
+          <i data-lucide="star" class="w-6 h-6"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- TARGET GOALS & PROGRESS BARS -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="target" class="w-5 h-5 text-indigo-500"></i>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-white">Target Progress</h2>
+        </div>
+        <button onclick="openTargetSettingsModal()" class="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Edit Targets</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Daily Goal -->
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs font-medium">
+            <span class="text-slate-600 dark:text-slate-300">Today's Target (<span id="dailyTargetHoursVal">4</span>h)</span>
+            <span id="dailyProgressText" class="text-slate-500 dark:text-slate-400">0h / 4h (0%)</span>
+          </div>
+          <div class="w-full bg-slate-100 dark:bg-slate-700/60 rounded-full h-3 overflow-hidden">
+            <div id="dailyProgressBar" class="bg-indigo-600 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Weekly Goal -->
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs font-medium">
+            <span class="text-slate-600 dark:text-slate-300">Weekly Target (<span id="weeklyTargetHoursVal">25</span>h)</span>
+            <span id="weeklyProgressText" class="text-slate-500 dark:text-slate-400">0h / 25h (0%)</span>
+          </div>
+          <div class="w-full bg-slate-100 dark:bg-slate-700/60 rounded-full h-3 overflow-hidden">
+            <div id="weeklyProgressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS VISUALIZATION SECTION -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- 7-Day Trend Bar Chart -->
+      <div class="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm space-y-4">
+        <h3 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+          <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-500"></i>
+          7-Day Activity Trend
+        </h3>
+        <div class="relative h-64 w-full">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Subject & Project Hours Breakdown Pie Chart -->
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm space-y-4">
+        <h3 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+          <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-500"></i>
+          Subject / Project Distribution
+        </h3>
+        <div class="relative h-64 w-full flex items-center justify-center">
+          <canvas id="subjectChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN DASHBOARD: TASKS & REWARDS SECTION -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm p-6 space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-700/60">
+        <div class="flex items-center space-x-2">
+          <div class="p-2 bg-amber-500/10 dark:bg-amber-500/20 text-amber-500 rounded-xl">
+            <i data-lucide="gift" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-slate-900 dark:text-white">Active Tasks & Self-Rewards</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Complete tasks to unlock custom rewards you set for yourself</p>
+          </div>
+        </div>
+        <button onclick="openTaskModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-xl shadow-sm transition-all self-start sm:self-auto">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>Add Task & Reward</span>
+        </button>
+      </div>
+
+      <!-- Quick Task Inline Form -->
+      <form id="inlineTaskForm" onsubmit="handleInlineTaskSubmit(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-3 bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
+        <div class="sm:col-span-5">
+          <input type="text" id="inlineTaskTitle" required placeholder="Task (e.g. Complete 2 Practice Papers)" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+        <div class="sm:col-span-5">
+          <input type="text" id="inlineTaskReward" required placeholder="Self Reward (e.g. 30 min gaming session)" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs focus:ring-2 focus:ring-amber-500 outline-none">
+        </div>
+        <div class="sm:col-span-2 flex justify-end">
+          <button type="submit" class="w-full py-2 bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-600 text-white text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+            <span>Add</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Task Grid Section -->
+      <div id="mainTaskListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <!-- Dynamic Tasks inserted here -->
+      </div>
+    </div>
+
+    <!-- LOG HISTORY TABLE SECTION -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm overflow-hidden">
+      <!-- Table Header & Filters -->
+      <div class="p-6 border-b border-slate-200 dark:border-slate-700/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h3 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+          <i data-lucide="history" class="w-5 h-5 text-indigo-500"></i>
+          Study & Project History Logs
+        </h3>
+
+        <!-- Filters Container -->
+        <div class="flex flex-wrap items-center gap-3">
+          <input type="text" id="searchInput" placeholder="Search keywords..." oninput="renderHistoryTable()" class="px-3.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none w-36 sm:w-48">
+          
+          <select id="filterCategory" onchange="renderHistoryTable()" class="px-3.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+            <option value="ALL">All Categories</option>
+          </select>
+
+          <button onclick="resetFilters()" class="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-medium">Clear</button>
+        </div>
+      </div>
+
+      <!-- Log Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+          <thead class="bg-slate-50 dark:bg-slate-900/50 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700/60">
+            <tr>
+              <th class="px-5 py-3 font-semibold">Date(s)</th>
+              <th class="px-5 py-3 font-semibold">Type & Title</th>
+              <th class="px-5 py-3 font-semibold">Duration</th>
+              <th class="px-5 py-3 font-semibold">Focus Level</th>
+              <th class="px-5 py-3 font-semibold">Notes / Key Takeaways</th>
+              <th class="px-5 py-3 font-semibold text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody" class="divide-y divide-slate-100 dark:divide-slate-700/40">
+            <!-- Dynamic rows inserted here -->
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Empty State -->
+      <div id="emptyLogState" class="hidden p-12 text-center space-y-3">
+        <div class="inline-flex p-4 bg-slate-100 dark:bg-slate-700/50 rounded-full text-slate-400">
+          <i data-lucide="book-open-check" class="w-8 h-8"></i>
+        </div>
+        <h4 class="text-base font-semibold text-slate-700 dark:text-slate-200">No Study Logs Found</h4>
+        <p class="text-xs text-slate-400 max-w-sm mx-auto">Start recording your progress by logging a subject study session or project work using the button above!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LOG STUDY OR PROJECT SESSION -->
+  <div id="logModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[90vh] flex flex-col my-auto">
+      
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <h3 id="modalLogTitle" class="text-lg font-semibold text-slate-900 dark:text-white">Log Activity</h3>
+        <button onclick="closeLogModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <form id="logForm" onsubmit="handleLogSubmit(event)" class="p-5 space-y-4 overflow-y-auto">
+        <input type="hidden" id="logId">
+
+        <!-- Activity Type Tab Selector -->
+        <div class="flex p-1 bg-slate-100 dark:bg-slate-900 rounded-xl">
+          <button type="button" id="tabSubjectBtn" onclick="switchLogType('subject')" class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm">Subject Study</button>
+          <button type="button" id="tabProjectBtn" onclick="switchLogType('project')" class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-500 dark:text-slate-400">Project Work</button>
+        </div>
+
+        <input type="hidden" id="logType" value="subject">
+
+        <!-- SUBJECT MODE FIELDS -->
+        <div id="subjectFields" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Date *</label>
+            <input type="date" id="logDate" required class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Subject Name *</label>
+            <input type="text" id="logSubject" placeholder="e.g. Mathematics, Physics, History" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Topic / Activity</label>
+            <input type="text" id="logTopic" placeholder="e.g. Calculus Chapter 4 Exercises" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+        </div>
+
+        <!-- PROJECT MODE FIELDS -->
+        <div id="projectFields" class="space-y-4 hidden">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Project Name *</label>
+            <input type="text" id="logProjName" placeholder="e.g. Portfolio Website, AI Research" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Start Date *</label>
+              <input type="date" id="logProjStartDate" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Date Till Now / End *</label>
+              <input type="date" id="logProjEndDate" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- SHARED DURATION FIELDS -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Hours</label>
+            <input type="number" id="logHours" min="0" max="24" value="1" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Minutes</label>
+            <input type="number" id="logMinutes" min="0" max="59" value="0" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+        </div>
+
+        <!-- FOCUS / PRODUCTIVITY RATING -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-xs font-medium text-slate-600 dark:text-slate-300">Focus Level (1 to 5)</label>
+            <span id="focusValDisplay" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400">4 / 5</span>
+          </div>
+          <input type="range" id="logFocus" min="1" max="5" value="4" oninput="document.getElementById('focusValDisplay').innerText = this.value + ' / 5'" class="w-full accent-indigo-600">
+        </div>
+
+        <!-- NOTES FIELD -->
+        <div>
+          <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Notes / Key Takeaways</label>
+          <textarea id="logNotes" rows="3" placeholder="Summary of what you studied or completed..." class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none"></textarea>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" onclick="closeLogModal()" class="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-xl shadow-md transition-all">Save Session</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: TASKS & CUSTOM REWARDS -->
+  <div id="taskModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[90vh] flex flex-col my-auto">
+      
+      <!-- Header -->
+      <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="gift" class="w-5 h-5 text-amber-500"></i>
+          <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Tasks & Self Rewards</h3>
+        </div>
+        <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Body Container -->
+      <div class="p-5 space-y-5 overflow-y-auto">
+        <!-- New Task Form -->
+        <form id="taskForm" onsubmit="handleTaskSubmit(event)" class="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700/60 space-y-3">
+          <input type="hidden" id="taskId">
+          <h4 id="taskFormTitle" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Add New Reward Task</h4>
+          
+          <div>
+            <input type="text" id="taskTitle" required placeholder="Task (e.g. Complete Chapter 5 Physics)" class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+
+          <div>
+            <input type="text" id="taskReward" required placeholder="Self-Reward (e.g. Watch 1 Episode of Anime / Treat Coffee)" class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button type="button" id="cancelTaskEditBtn" onclick="cancelTaskEdit()" class="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 hidden">Cancel Edit</button>
+            <button type="submit" id="saveTaskBtn" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-xl transition-all">Add Task & Reward</button>
+          </div>
+        </form>
+
+        <!-- Task List -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Your Tasks</h4>
+          <div id="taskListContainer" class="space-y-2.5">
+            <!-- Dynamic Task List -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FOCUS TIMER & STOPWATCH -->
+  <div id="timerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[90vh] flex flex-col my-auto">
+      
+      <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+          <i data-lucide="timer" class="w-5 h-5 text-indigo-500"></i> Focus Timer Tool
+        </h3>
+        <button onclick="closeTimerModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 text-center space-y-6">
+        <!-- Timer Mode Toggle -->
+        <div class="inline-flex p-1 bg-slate-100 dark:bg-slate-900 rounded-xl">
+          <button onclick="setTimerMode('pomodoro')" id="btnTimerPomodoro" class="px-4 py-1.5 text-xs font-medium rounded-lg transition-all bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm">25m Pomodoro</button>
+          <button onclick="setTimerMode('stopwatch')" id="btnTimerStopwatch" class="px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-500 dark:text-slate-400">Stopwatch</button>
+        </div>
+
+        <!-- Timer Display Screen -->
+        <div class="py-4">
+          <span id="timerDisplay" class="text-6xl font-bold tracking-tight text-slate-900 dark:text-white font-mono">25:00</span>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex justify-center items-center gap-4">
+          <button onclick="toggleTimer()" id="btnTimerStart" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-md transition-all">Start Focus</button>
+          <button onclick="resetTimer()" class="px-4 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium text-sm rounded-xl transition-all">Reset</button>
+        </div>
+
+        <p class="text-xs text-slate-400">Elapsed timer sessions can automatically populate your session log!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TARGET SETTINGS -->
+  <div id="targetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[90vh] flex flex-col my-auto">
+      
+      <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <h3 class="text-base font-semibold text-slate-900 dark:text-white">Adjust Targets</h3>
+        <button onclick="closeTargetModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="saveTargetSettings(event)" class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Daily Target Hours</label>
+          <input type="number" id="inputDailyTarget" min="1" max="24" required class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Weekly Target Hours</label>
+          <input type="number" id="inputWeeklyTarget" min="1" max="168" required class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" onclick="closeTargetModal()" class="px-4 py-2 text-xs font-medium text-slate-500">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-xl">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Application Logic JS -->
+  <script>
+    // State Data Management
+    const STORAGE_KEY = 'studypulse_app_data_v1';
+    
+    let appState = {
+      logs: [],
+      tasks: [],
+      targets: {
+        daily: 4,
+        weekly: 25
+      },
+      theme: 'dark'
+    };
+
+    // Global Timer State
+    let timerState = {
+      mode: 'pomodoro', // 'pomodoro' | 'stopwatch'
+      isRunning: false,
+      secondsRemaining: 25 * 60,
+      stopwatchSeconds: 0,
+      intervalId: null
+    };
+
+    // Chart Instances
+    let subjectChartInstance = null;
+    let trendChartInstance = null;
+
+    // Safe Lucide Icon Renderer Helper
+    function refreshIcons() {
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
+    }
+
+    // --- DOM Elements Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+      refreshIcons();
+      loadDataFromLocalStorage();
+      initializeTheme();
+      setDefaultDates();
+      setupEventListeners();
+      renderAll();
+    });
+
+    // --- Local Storage Management ---
+    function loadDataFromLocalStorage() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (data) {
+          const parsed = JSON.parse(data);
+          appState.logs = parsed.logs || [];
+          appState.tasks = parsed.tasks || [];
+          appState.targets = parsed.targets || { daily: 4, weekly: 25 };
+          appState.theme = parsed.theme || 'dark';
+        }
+      } catch (err) {
+        console.error('Error reading localStorage:', err);
+      }
+    }
+
+    function saveDataToLocalStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (err) {
+        console.error('Error saving to localStorage:', err);
+      }
+    }
+
+    // --- Core Render Pipeline ---
+    function renderAll() {
+      renderMetrics();
+      renderTargets();
+      renderCategoryFilterOptions();
+      renderHistoryTable();
+      renderTaskList();
+      renderCharts();
+      refreshIcons();
+    }
+
+    // --- Theme Control ---
+    function initializeTheme() {
+      if (appState.theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.getElementById('themeIconLight').classList.remove('hidden');
+        document.getElementById('themeIconDark').classList.add('hidden');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('themeIconDark').classList.remove('hidden');
+        document.getElementById('themeIconLight').classList.add('hidden');
+      }
+    }
+
+    function toggleTheme() {
+      appState.theme = appState.theme === 'dark' ? 'light' : 'dark';
+      saveDataToLocalStorage();
+      initializeTheme();
+      renderCharts(); // Re-render charts for theme visual updates
+    }
+
+    // --- Helper Functions ---
+    function getTodayISO() {
+      return new Date().toISOString().split('T')[0];
+    }
+
+    function setDefaultDates() {
+      const today = getTodayISO();
+      document.getElementById('logDate').value = today;
+      document.getElementById('logProjStartDate').value = today;
+      document.getElementById('logProjEndDate').value = today;
+    }
+
+    function formatDisplayDate(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return dateStr;
+      return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // --- 1. Metrics Computation ---
+    function renderMetrics() {
+      let totalMinutes = 0;
+      let focusSum = 0;
+      const activeDaysSet = new Set();
+
+      appState.logs.forEach(log => {
+        totalMinutes += (log.durationMinutes || 0);
+        focusSum += (log.focus || 3);
+        
+        // Count active dates
+        if (log.type === 'project') {
+          if (log.projEndDate) activeDaysSet.add(log.projEndDate);
+        } else {
+          if (log.date) activeDaysSet.add(log.date);
+        }
+      });
+
+      const totalHours = Math.floor(totalMinutes / 60);
+      const remainingMins = totalMinutes % 60;
+      document.getElementById('statTotalHours').innerText = `${totalHours}h ${remainingMins}m`;
+      document.getElementById('statTotalSubtext').innerText = `${appState.logs.length} total entries`;
+
+      // Streak Calculation
+      const streak = calculateCurrentStreak(activeDaysSet);
+      document.getElementById('statStreak').innerText = `${streak} ${streak === 1 ? 'Day' : 'Days'}`;
+
+      // Daily Avg Calculation
+      const activeDaysCount = activeDaysSet.size || 1;
+      const avgHours = (totalMinutes / 60 / activeDaysCount).toFixed(1);
+      document.getElementById('statDailyAvg').innerText = `${avgHours}h`;
+
+      // Avg Focus Rating
+      const avgFocus = appState.logs.length > 0 ? (focusSum / appState.logs.length).toFixed(1) : '0.0';
+      document.getElementById('statAvgFocus').innerText = `${avgFocus} / 5`;
+    }
+
+    function calculateCurrentStreak(daysSet) {
+      if (daysSet.size === 0) return 0;
+
+      let streak = 0;
+      let checkDate = new Date();
+
+      while (true) {
+        const iso = checkDate.toISOString().split('T')[0];
+        if (daysSet.has(iso)) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          // Check if streak was yesterday
+          if (streak === 0) {
+            checkDate.setDate(checkDate.getDate() - 1);
+            const prevIso = checkDate.toISOString().split('T')[0];
+            if (daysSet.has(prevIso)) {
+              streak++;
+              checkDate.setDate(checkDate.getDate() - 1);
+              continue;
+            }
+          }
+          break;
+        }
+      }
+
+      return streak;
+    }
+
+    // --- 2. Targets & Progress Calculation ---
+    function renderTargets() {
+      const dailyTarget = appState.targets.daily;
+      const weeklyTarget = appState.targets.weekly;
+
+      document.getElementById('dailyTargetHoursVal').innerText = dailyTarget;
+      document.getElementById('weeklyTargetHoursVal').innerText = weeklyTarget;
+
+      const todayIso = getTodayISO();
+      
+      // Calculate today's logged minutes
+      let todayMins = 0;
+      appState.logs.forEach(log => {
+        const logDate = log.type === 'project' ? log.projEndDate : log.date;
+        if (logDate === todayIso) {
+          todayMins += (log.durationMinutes || 0);
+        }
+      });
+
+      const todayHours = todayMins / 60;
+      const dailyPercent = Math.min(Math.round((todayHours / dailyTarget) * 100), 100);
+      
+      document.getElementById('dailyProgressBar').style.width = `${dailyPercent}%`;
+      document.getElementById('dailyProgressText').innerText = `${todayHours.toFixed(1)}h / ${dailyTarget}h (${dailyPercent}%)`;
+
+      // Calculate this week's logged minutes (Last 7 days)
+      const now = new Date();
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(now.getDate() - 6);
+      sevenDaysAgo.setHours(0,0,0,0);
+
+      let weeklyMins = 0;
+      appState.logs.forEach(log => {
+        const logDateStr = log.type === 'project' ? log.projEndDate : log.date;
+        if (logDateStr) {
+          const logDate = new Date(logDateStr);
+          if (logDate >= sevenDaysAgo && logDate <= now) {
+            weeklyMins += (log.durationMinutes || 0);
+          }
+        }
+      });
+
+      const weeklyHours = weeklyMins / 60;
+      const weeklyPercent = Math.min(Math.round((weeklyHours / weeklyTarget) * 100), 100);
+
+      document.getElementById('weeklyProgressBar').style.width = `${weeklyPercent}%`;
+      document.getElementById('weeklyProgressText').innerText = `${weeklyHours.toFixed(1)}h / ${weeklyTarget}h (${weeklyPercent}%)`;
+    }
+
+    // --- 3. Filter Options Render ---
+    function renderCategoryFilterOptions() {
+      const select = document.getElementById('filterCategory');
+      const currentVal = select.value;
+
+      const categories = new Set();
+      appState.logs.forEach(log => {
+        if (log.type === 'project') {
+          if (log.projName) categories.add(`Project: ${log.projName}`);
+        } else {
+          if (log.subject) categories.add(log.subject);
+        }
+      });
+
+      select.innerHTML = '<option value="ALL">All Categories</option>';
+      categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.innerText = cat;
+        select.appendChild(opt);
+      });
+
+      select.value = currentVal || 'ALL';
+    }
+
+    // --- 4. History Table Render ---
+    function renderHistoryTable() {
+      const tbody = document.getElementById('logTableBody');
+      const emptyState = document.getElementById('emptyLogState');
+      tbody.innerHTML = '';
+
+      const searchTerm = (document.getElementById('searchInput').value || '').toLowerCase();
+      const filterCat = document.getElementById('filterCategory').value;
+
+      let filtered = appState.logs.filter(log => {
+        const categoryName = log.type === 'project' ? `Project: ${log.projName}` : log.subject;
+        
+        // Category Filter
+        if (filterCat !== 'ALL' && categoryName !== filterCat) return false;
+
+        // Search Filter
+        if (searchTerm) {
+          const searchHaystack = `${log.subject || ''} ${log.projName || ''} ${log.topic || ''} ${log.notes || ''}`.toLowerCase();
+          if (!searchHaystack.includes(searchTerm)) return false;
+        }
+
+        return true;
+      });
+
+      // Sort newest date first
+      filtered.sort((a, b) => {
+        const dateA = a.type === 'project' ? a.projEndDate : a.date;
+        const dateB = b.type === 'project' ? b.projEndDate : b.date;
+        return new Date(dateB) - new Date(dateA);
+      });
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      } else {
+        emptyState.classList.add('hidden');
+      }
+
+      filtered.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors border-b border-slate-100 dark:border-slate-700/40';
+
+        const hrs = Math.floor(log.durationMinutes / 60);
+        const mins = log.durationMinutes % 60;
+        const durationFormatted = `${hrs > 0 ? hrs + 'h ' : ''}${mins}m`;
+
+        const isProj = log.type === 'project';
+        const dateDisplay = isProj 
+          ? `<span class="text-xs text-slate-500 dark:text-slate-400 font-mono">${formatDisplayDate(log.projStartDate)} → ${formatDisplayDate(log.projEndDate)}</span>`
+          : `<span class="font-mono text-xs">${formatDisplayDate(log.date)}</span>`;
+
+        const badgeHtml = isProj
+          ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 mb-1"><i data-lucide="folder-kanban" class="w-3 h-3"></i> Project: ${escapeHtml(log.projName)}</span>`
+          : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 mb-1"><i data-lucide="book-open" class="w-3 h-3"></i> ${escapeHtml(log.subject)}</span>`;
+
+        const topicSubtext = isProj
+          ? `<div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Project Progress Log</div>`
+          : `<div class="text-xs text-slate-600 dark:text-slate-300 font-medium">${escapeHtml(log.topic || '')}</div>`;
+
+        tr.innerHTML = `
+          <td class="px-5 py-4 font-medium text-slate-900 dark:text-slate-200 whitespace-nowrap">${dateDisplay}</td>
+          <td class="px-5 py-4">
+            ${badgeHtml}
+            ${topicSubtext}
+          </td>
+          <td class="px-5 py-4 font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">${durationFormatted}</td>
+          <td class="px-5 py-4 whitespace-nowrap">
+            <div class="flex items-center space-x-1 text-amber-500">
+              ${'★'.repeat(log.focus || 3)}<span class="text-xs text-slate-400 font-normal ml-1">(${log.focus || 3}/5)</span>
+            </div>
+          </td>
+          <td class="px-5 py-4 text-xs text-slate-500 dark:text-slate-400 max-w-xs truncate">
+            ${log.notes ? escapeHtml(log.notes) : '<span class="italic text-slate-400">No notes</span>'}
+          </td>
+          <td class="px-5 py-4 text-right space-x-2 whitespace-nowrap">
+            <button onclick="editLogEntry('${log.id}')" class="p-1.5 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Edit">
+              <i data-lucide="pencil" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteLogEntry('${log.id}')" class="p-1.5 text-slate-500 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Delete">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      refreshIcons();
+    }
+
+    // --- 5. Render Chart Visualizers ---
+    function renderCharts() {
+      const isDarkMode = appState.theme === 'dark';
+      const textColor = isDarkMode ? '#cbd5e1' : '#475569';
+      const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
+
+      // 1. Subject Breakdown Pie Chart
+      const subjectHoursMap = {};
+      appState.logs.forEach(log => {
+        const key = log.type === 'project' ? `Project: ${log.projName}` : (log.subject || 'Uncategorized');
+        const hrs = (log.durationMinutes || 0) / 60;
+        subjectHoursMap[key] = (subjectHoursMap[key] || 0) + hrs;
+      });
+
+      const pieLabels = Object.keys(subjectHoursMap);
+      const pieData = Object.values(subjectHoursMap);
+
+      const ctxSubject = document.getElementById('subjectChart').getContext('2d');
+      if (subjectChartInstance) subjectChartInstance.destroy();
+
+      if (pieLabels.length === 0) {
+        subjectChartInstance = new Chart(ctxSubject, {
+          type: 'doughnut',
+          data: {
+            labels: ['No Data Recorded'],
+            datasets: [{
+              data: [1],
+              backgroundColor: [isDarkMode ? '#334155' : '#e2e8f0']
+            }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+      } else {
+        subjectChartInstance = new Chart(ctxSubject, {
+          type: 'doughnut',
+          data: {
+            labels: pieLabels,
+            datasets: [{
+              data: pieData.map(v => v.toFixed(1)),
+              backgroundColor: [
+                '#6366f1', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6', '#14b8a6', '#f97316'
+              ]
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { color: textColor, font: { family: 'Inter', size: 11 } }
+              }
+            }
+          }
+        });
+      }
+
+      // 2. 7-Day Trend Chart
+      const days = [];
+      const dayHours = [];
+      
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const iso = d.toISOString().split('T')[0];
+        
+        // Day Label (e.g. Mon, Tue)
+        const label = d.toLocaleDateString('en-US', { weekday: 'short' });
+        days.push(label);
+
+        let sumMins = 0;
+        appState.logs.forEach(log => {
+          const lDate = log.type === 'project' ? log.projEndDate : log.date;
+          if (lDate === iso) {
+            sumMins += (log.durationMinutes || 0);
+          }
+        });
+        dayHours.push((sumMins / 60).toFixed(1));
+      }
+
+      const ctxTrend = document.getElementById('trendChart').getContext('2d');
+      if (trendChartInstance) trendChartInstance.destroy();
+
+      trendChartInstance = new Chart(ctxTrend, {
+        type: 'bar',
+        data: {
+          labels: days,
+          datasets: [{
+            label: 'Study Hours',
+            data: dayHours,
+            backgroundColor: '#6366f1',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              ticks: { color: textColor, font: { family: 'Inter' } },
+              grid: { color: gridColor }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { color: textColor, font: { family: 'Inter' } },
+              grid: { color: gridColor }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    // --- 6. Tasks & Custom Rewards ---
+    function renderTaskList() {
+      const container = document.getElementById('taskListContainer');
+      const mainContainer = document.getElementById('mainTaskListContainer');
+      if (container) container.innerHTML = '';
+      if (mainContainer) mainContainer.innerHTML = '';
+
+      if (appState.tasks.length === 0) {
+        const emptyHtml = `
+          <div class="col-span-full text-center py-8 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700/60 space-y-2">
+            <div class="inline-flex p-3 bg-amber-50 dark:bg-amber-950/40 text-amber-500 rounded-full">
+              <i data-lucide="gift" class="w-6 h-6"></i>
+            </div>
+            <h4 class="text-xs font-semibold text-slate-700 dark:text-slate-300">No active tasks or rewards</h4>
+            <p class="text-xs text-slate-400">Add a task and define your self-reward above to keep yourself motivated!</p>
+          </div>
+        `;
+        if (container) container.innerHTML = emptyHtml;
+        if (mainContainer) mainContainer.innerHTML = emptyHtml;
+        refreshIcons();
+        return;
+      }
+
+      appState.tasks.forEach(task => {
+        // Modal item structure
+        if (container) {
+          const item = document.createElement('div');
+          item.className = `p-3.5 rounded-xl border flex items-start justify-between gap-3 transition-all ${
+            task.completed 
+              ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/40 opacity-80'
+              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700/60'
+          }`;
+
+          item.innerHTML = `
+            <div class="flex items-start space-x-3 flex-grow">
+              <button onclick="toggleTaskCompletion('${task.id}')" class="mt-0.5 p-1 rounded-lg transition-colors ${
+                task.completed 
+                  ? 'bg-emerald-500 text-white' 
+                  : 'border border-slate-300 dark:border-slate-600 text-transparent hover:border-emerald-500'
+              }">
+                <i data-lucide="check" class="w-4 h-4"></i>
+              </button>
+              <div>
+                <h4 class="text-sm font-semibold text-slate-800 dark:text-slate-100 ${task.completed ? 'line-through text-slate-500 dark:text-slate-400' : ''}">
+                  ${escapeHtml(task.title)}
+                </h4>
+                <div class="mt-1 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
+                  <i data-lucide="sparkles" class="w-3 h-3 text-amber-500"></i>
+                  <span>Reward: ${escapeHtml(task.reward)}</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-1">
+              <button onclick="editTask('${task.id}')" class="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700">
+                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="deleteTask('${task.id}')" class="p-1 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          `;
+          container.appendChild(item);
+        }
+
+        // Main Dashboard Grid Card
+        if (mainContainer) {
+          const card = document.createElement('div');
+          card.className = `p-4 rounded-xl border flex flex-col justify-between space-y-3 transition-all ${
+            task.completed 
+              ? 'bg-emerald-50/40 dark:bg-emerald-950/15 border-emerald-200 dark:border-emerald-900/40 opacity-80' 
+              : 'bg-slate-50/50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600'
+          }`;
+
+          card.innerHTML = `
+            <div class="space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <h4 class="text-sm font-semibold text-slate-900 dark:text-white ${task.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''}">
+                  ${escapeHtml(task.title)}
+                </h4>
+                <button onclick="toggleTaskCompletion('${task.id}')" class="p-1.5 rounded-lg transition-all ${
+                  task.completed 
+                    ? 'bg-emerald-500 text-white' 
+                    : 'bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-300 hover:text-emerald-500'
+                }" title="${task.completed ? 'Mark incomplete' : 'Complete task to claim reward'}">
+                  <i data-lucide="check" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                <i data-lucide="gift" class="w-3.5 h-3.5 text-amber-500"></i>
+                <span>Reward: ${escapeHtml(task.reward)}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-200/60 dark:border-slate-800">
+              <span class="${task.completed ? 'text-emerald-500 font-semibold' : ''}">${task.completed ? '✓ Completed' : 'Pending completion'}</span>
+              <div class="flex items-center space-x-1">
+                <button onclick="editTask('${task.id}'); openTaskModal();" class="p-1 hover:text-indigo-500 rounded">
+                  <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="deleteTask('${task.id}')" class="p-1 hover:text-red-500 rounded">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          `;
+          mainContainer.appendChild(card);
+        }
+      });
+
+      refreshIcons();
+    }
+
+    // Inline Task Creator Form Handler
+    function handleInlineTaskSubmit(e) {
+      e.preventDefault();
+      const title = document.getElementById('inlineTaskTitle').value.trim();
+      const reward = document.getElementById('inlineTaskReward').value.trim();
+
+      if (!title || !reward) return;
+
+      appState.tasks.push({
+        id: 'task_' + Date.now(),
+        title: title,
+        reward: reward,
+        completed: false
+      });
+
+      saveDataToLocalStorage();
+      document.getElementById('inlineTaskForm').reset();
+      renderTaskList();
+      showCustomToast("New task & reward added!");
+    }
+
+    // --- Task & Reward Handlers ---
+    function handleTaskSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('taskId').value;
+      const title = document.getElementById('taskTitle').value.trim();
+      const reward = document.getElementById('taskReward').value.trim();
+
+      if (!title || !reward) return;
+
+      if (id) {
+        // Edit
+        const tIndex = appState.tasks.findIndex(t => t.id === id);
+        if (tIndex !== -1) {
+          appState.tasks[tIndex].title = title;
+          appState.tasks[tIndex].reward = reward;
+        }
+      } else {
+        // Create
+        appState.tasks.push({
+          id: 'task_' + Date.now(),
+          title: title,
+          reward: reward,
+          completed: false
+        });
+      }
+
+      saveDataToLocalStorage();
+      cancelTaskEdit();
+      renderTaskList();
+    }
+
+    function toggleTaskCompletion(id) {
+      const task = appState.tasks.find(t => t.id === id);
+      if (!task) return;
+
+      task.completed = !task.completed;
+      saveDataToLocalStorage();
+      renderTaskList();
+
+      if (task.completed) {
+        // Confetti celebration
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+        }
+        showCustomToast(`🎉 Reward Unlocked! Enjoy: ${task.reward}`);
+      }
+    }
+
+    function editTask(id) {
+      const task = appState.tasks.find(t => t.id === id);
+      if (!task) return;
+
+      document.getElementById('taskId').value = task.id;
+      document.getElementById('taskTitle').value = task.title;
+      document.getElementById('taskReward').value = task.reward;
+
+      document.getElementById('taskFormTitle').innerText = 'Edit Task & Reward';
+      document.getElementById('saveTaskBtn').innerText = 'Update Task';
+      document.getElementById('cancelTaskEditBtn').classList.remove('hidden');
+    }
+
+    function cancelTaskEdit() {
+      document.getElementById('taskId').value = '';
+      document.getElementById('taskForm').reset();
+      document.getElementById('taskFormTitle').innerText = 'Add New Reward Task';
+      document.getElementById('saveTaskBtn').innerText = 'Add Task & Reward';
+      document.getElementById('cancelTaskEditBtn').classList.add('hidden');
+    }
+
+    function deleteTask(id) {
+      appState.tasks = appState.tasks.filter(t => t.id !== id);
+      saveDataToLocalStorage();
+      renderTaskList();
+    }
+
+    // --- Modal Controls & Submissions ---
+    function openLogModal() {
+      document.getElementById('logForm').reset();
+      document.getElementById('logId').value = '';
+      setDefaultDates();
+      switchLogType('subject');
+      document.getElementById('modalLogTitle').innerText = 'Log Activity';
+      document.getElementById('logModal').classList.remove('hidden');
+    }
+
+    function closeLogModal() {
+      document.getElementById('logModal').classList.add('hidden');
+    }
+
+    function switchLogType(type) {
+      document.getElementById('logType').value = type;
+      const subBtn = document.getElementById('tabSubjectBtn');
+      const projBtn = document.getElementById('tabProjectBtn');
+      const subFields = document.getElementById('subjectFields');
+      const projFields = document.getElementById('projectFields');
+
+      if (type === 'subject') {
+        subBtn.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm";
+        projBtn.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-500 dark:text-slate-400";
+        subFields.classList.remove('hidden');
+        projFields.classList.add('hidden');
+      } else {
+        projBtn.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm";
+        subBtn.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-500 dark:text-slate-400";
+        projFields.classList.remove('hidden');
+        subFields.classList.add('hidden');
+      }
+    }
+
+    function handleLogSubmit(e) {
+      e.preventDefault();
+
+      const type = document.getElementById('logType').value;
+      const id = document.getElementById('logId').value;
+      const hours = parseInt(document.getElementById('logHours').value || '0', 10);
+      const minutes = parseInt(document.getElementById('logMinutes').value || '0', 10);
+      const durationMinutes = (hours * 60) + minutes;
+
+      if (durationMinutes <= 0) {
+        showCustomToast("Please enter a valid study duration.");
+        return;
+      }
+
+      const focus = parseInt(document.getElementById('logFocus').value || '4', 10);
+      const notes = document.getElementById('logNotes').value.trim();
+
+      let logPayload = {
+        id: id || ('log_' + Date.now()),
+        type: type,
+        durationMinutes: durationMinutes,
+        focus: focus,
+        notes: notes
+      };
+
+      const todayIso = getTodayISO();
+
+      if (type === 'subject') {
+        const dateVal = document.getElementById('logDate').value;
+        const subjectVal = document.getElementById('logSubject').value.trim();
+
+        if (!dateVal || !subjectVal) {
+          showCustomToast("Please enter a subject name and date.");
+          return;
+        }
+
+        if (dateVal > todayIso) {
+          showCustomToast("Log date cannot be in the future.");
+          return;
+        }
+
+        logPayload.date = dateVal;
+        logPayload.subject = subjectVal;
+        logPayload.topic = document.getElementById('logTopic').value.trim();
+      } else {
+        const projName = document.getElementById('logProjName').value.trim();
+        const startDate = document.getElementById('logProjStartDate').value;
+        const endDate = document.getElementById('logProjEndDate').value;
+
+        if (!projName || !startDate || !endDate) {
+          showCustomToast("Please complete project name and date ranges.");
+          return;
+        }
+
+        if (endDate > todayIso) {
+          showCustomToast("Project end date cannot be in the future.");
+          return;
+        }
+
+        logPayload.projName = projName;
+        logPayload.projStartDate = startDate;
+        logPayload.projEndDate = endDate;
+      }
+
+      if (id) {
+        const idx = appState.logs.findIndex(l => l.id === id);
+        if (idx !== -1) appState.logs[idx] = logPayload;
+      } else {
+        appState.logs.push(logPayload);
+      }
+
+      saveDataToLocalStorage();
+      closeLogModal();
+      renderAll();
+    }
+
+    function editLogEntry(id) {
+      const log = appState.logs.find(l => l.id === id);
+      if (!log) return;
+
+      openLogModal();
+      document.getElementById('logId').value = log.id;
+      document.getElementById('modalLogTitle').innerText = 'Edit Activity';
+
+      const hrs = Math.floor(log.durationMinutes / 60);
+      const mins = log.durationMinutes % 60;
+      document.getElementById('logHours').value = hrs;
+      document.getElementById('logMinutes').value = mins;
+
+      document.getElementById('logFocus').value = log.focus || 4;
+      document.getElementById('focusValDisplay').innerText = (log.focus || 4) + ' / 5';
+      document.getElementById('logNotes').value = log.notes || '';
+
+      if (log.type === 'project') {
+        switchLogType('project');
+        document.getElementById('logProjName').value = log.projName || '';
+        document.getElementById('logProjStartDate').value = log.projStartDate || getTodayISO();
+        document.getElementById('logProjEndDate').value = log.projEndDate || getTodayISO();
+      } else {
+        switchLogType('subject');
+        document.getElementById('logDate').value = log.date || getTodayISO();
+        document.getElementById('logSubject').value = log.subject || '';
+        document.getElementById('logTopic').value = log.topic || '';
+      }
+    }
+
+    function deleteLogEntry(id) {
+      appState.logs = appState.logs.filter(l => l.id !== id);
+      saveDataToLocalStorage();
+      renderAll();
+    }
+
+    // Modal Task Screen
+    function openTaskModal() {
+      cancelTaskEdit();
+      renderTaskList();
+      document.getElementById('taskModal').classList.remove('hidden');
+    }
+
+    function closeTaskModal() {
+      document.getElementById('taskModal').classList.add('hidden');
+    }
+
+    // Modal Target Settings
+    function openTargetSettingsModal() {
+      document.getElementById('inputDailyTarget').value = appState.targets.daily;
+      document.getElementById('inputWeeklyTarget').value = appState.targets.weekly;
+      document.getElementById('targetModal').classList.remove('hidden');
+    }
+
+    function closeTargetModal() {
+      document.getElementById('targetModal').classList.add('hidden');
+    }
+
+    function saveTargetSettings(e) {
+      e.preventDefault();
+      appState.targets.daily = parseInt(document.getElementById('inputDailyTarget').value, 10);
+      appState.targets.weekly = parseInt(document.getElementById('inputWeeklyTarget').value, 10);
+      saveDataToLocalStorage();
+      closeTargetModal();
+      renderTargets();
+    }
+
+    // --- Timer Controls ---
+    function openTimerModal() {
+      document.getElementById('timerModal').classList.remove('hidden');
+    }
+
+    function closeTimerModal() {
+      document.getElementById('timerModal').classList.add('hidden');
+    }
+
+    function setTimerMode(mode) {
+      timerState.mode = mode;
+      pauseTimer();
+
+      const btnP = document.getElementById('btnTimerPomodoro');
+      const btnS = document.getElementById('btnTimerStopwatch');
+
+      if (mode === 'pomodoro') {
+        btnP.className = "px-4 py-1.5 text-xs font-medium rounded-lg transition-all bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm";
+        btnS.className = "px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-500 dark:text-slate-400";
+        timerState.secondsRemaining = 25 * 60;
+        updateTimerDisplay(timerState.secondsRemaining);
+      } else {
+        btnS.className = "px-4 py-1.5 text-xs font-medium rounded-lg transition-all bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm";
+        btnP.className = "px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-500 dark:text-slate-400";
+        timerState.stopwatchSeconds = 0;
+        updateTimerDisplay(0);
+      }
+    }
+
+    function toggleTimer() {
+      if (timerState.isRunning) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    }
+
+    function startTimer() {
+      timerState.isRunning = true;
+      document.getElementById('btnTimerStart').innerText = 'Pause Focus';
+      document.getElementById('btnTimerStart').className = "px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-medium text-sm rounded-xl shadow-md transition-all";
+
+      timerState.intervalId = setInterval(() => {
+        if (timerState.mode === 'pomodoro') {
+          timerState.secondsRemaining--;
+          updateTimerDisplay(timerState.secondsRemaining);
+          if (timerState.secondsRemaining <= 0) {
+            pauseTimer();
+            if (typeof confetti === 'function') confetti();
+            showCustomToast("Pomodoro finished! Time for a short break.");
+          }
+        } else {
+          timerState.stopwatchSeconds++;
+          updateTimerDisplay(timerState.stopwatchSeconds);
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      timerState.isRunning = false;
+      if (timerState.intervalId) clearInterval(timerState.intervalId);
+      document.getElementById('btnTimerStart').innerText = 'Start Focus';
+      document.getElementById('btnTimerStart').className = "px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-md transition-all";
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      if (timerState.mode === 'pomodoro') {
+        timerState.secondsRemaining = 25 * 60;
+        updateTimerDisplay(timerState.secondsRemaining);
+      } else {
+        timerState.stopwatchSeconds = 0;
+        updateTimerDisplay(0);
+      }
+    }
+
+    function updateTimerDisplay(totalSecs) {
+      const m = Math.floor(totalSecs / 60);
+      const s = totalSecs % 60;
+      document.getElementById('timerDisplay').innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    // --- Import / Export Local Data ---
+    function exportDataJSON() {
+      const jsonStr = JSON.stringify(appState, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `StudyPulse_Backup_${getTodayISO()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function importDataJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported && (Array.isArray(imported.logs) || Array.isArray(imported.tasks))) {
+            appState.logs = imported.logs || [];
+            appState.tasks = imported.tasks || [];
+            appState.targets = imported.targets || { daily: 4, weekly: 25 };
+            saveDataToLocalStorage();
+            renderAll();
+            showCustomToast("Data imported successfully!");
+          } else {
+            showCustomToast("Invalid JSON structure.");
+          }
+        } catch (err) {
+          showCustomToast("Failed to parse JSON backup file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Filter Clear Helper
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterCategory').value = 'ALL';
+      renderHistoryTable();
+    }
+
+    function setupEventListeners() {
+      // Esc key closes active modal
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeLogModal();
+          closeTaskModal();
+          closeTimerModal();
+          closeTargetModal();
+        }
+      });
+    }
+
+    // Floating Custom Toast Notification
+    function showCustomToast(message) {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-5 right-5 z-50 bg-slate-900 text-white text-xs font-medium px-4 py-3 rounded-xl shadow-2xl border border-slate-700 flex items-center space-x-2 animate-bounce';
+      toast.innerHTML = `<i data-lucide="info" class="w-4 h-4 text-indigo-400"></i><span>${escapeHtml(message)}</span>`;
+      document.body.appendChild(toast);
+      refreshIcons();
+
+      setTimeout(() => {
+        toast.remove();
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
